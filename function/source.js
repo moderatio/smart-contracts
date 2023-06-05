@@ -1,46 +1,31 @@
-// This example shows how to make a call to an open API (no authentication required)
-// to retrieve asset price from a symbol(e.g., ETH) to another symbol (e.g., USD)
+const prompt = args[0]
 
-// CryptoCompare API https://min-api.cryptocompare.com/documentation?key=Price&cat=multipleSymbolsFullPriceEndpoint
+if (
+    !secrets.openaiKey
+) {
+    throw Error(
+        "Need to set OPENAI_KEY environment variable"
+    )
+}
 
-// Refer to https://github.com/smartcontractkit/functions-hardhat-starter-kit#javascript-code
+// example request: 
+// curl https://api.openai.com/v1/completions -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_KEY" -d '{"model": "text-davinci-003", "prompt": "Say this is a test", "temperature": 0, "max_tokens": 7}
 
-// Arguments can be provided when a request is initated on-chain and used in the request source code as shown below
-const fromSymbol = args[0]
-const toSymbol = args[1]
-
-// make HTTP request
-const url = `https://min-api.cryptocompare.com/data/pricemultifull`
-console.log(`HTTP GET Request to ${url}?fsyms=${fromSymbol}&tsyms=${toSymbol}`)
-
-// construct the HTTP Request object. See: https://github.com/smartcontractkit/functions-hardhat-starter-kit#javascript-code
-// params used for URL query parameters
-// Example of query: https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ETH&tsyms=USD
-const cryptoCompareRequest = Functions.makeHttpRequest({
-  url: url,
-  params: {
-    fsyms: fromSymbol,
-    tsyms: toSymbol,
-  },
+// example response:
+// {"id":"cmpl-6jFdLbY08kJobPRfCZL4SVzQ6eidJ","object":"text_completion","created":1676242875,"model":"text-davinci-003","choices":[{"text":"\n\nThis is indeed a test","index":0,"logprobs":null,"finish_reason":"length"}],"usage":{"prompt_tokens":5,"completion_tokens":7,"total_tokens":12}}
+const openAIRequest = Functions.makeHttpRequest({
+    url: "https://api.openai.com/v1/completions",
+    method: "POST",
+    headers: {
+        'Authorization': `Bearer ${secrets.openaiKey}`
+    },
+    data: { "model": "text-davinci-003", "prompt": prompt, "temperature": 0, "max_tokens": 1 }
 })
 
-// Execute the API request (Promise)
-const cryptoCompareResponse = await cryptoCompareRequest
-if (cryptoCompareResponse.error) {
-  console.error(cryptoCompareResponse.error)
-  throw Error("Request failed")
-}
+const [openAiResponse] = await Promise.all([
+    openAIRequest
+])
+console.log("raw response", openAiResponse)
 
-const data = cryptoCompareResponse["data"]
-if (data.Response === "Error") {
-  console.error(data.Message)
-  throw Error(`Functional error. Read message: ${data.Message}`)
-}
-
-// extract the price
-const price = data["RAW"][fromSymbol][toSymbol]["PRICE"]
-console.log(`${fromSymbol} price is: ${price.toFixed(2)} ${toSymbol}`)
-
-// Solidity doesn't support decimals so multiply by 100 and round to the nearest integer
-// Use Functions.encodeUint256 to encode an unsigned integer to a Buffer
-return Functions.encodeUint256(Math.round(price * 100))
+const result = openAiResponse.data.choices[0].text
+return Functions.encodeUint256(parseInt(result))

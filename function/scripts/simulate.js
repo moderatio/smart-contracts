@@ -1,5 +1,9 @@
 const { simulateRequest, getDecodedResultLog, getRequestConfig } = require("../FunctionsSandboxLibrary")
 
+const dotenv = require("dotenv")
+
+dotenv.config()
+
 const runSimulation = async (requestConfig) => {
   const { resultLog, result, success } = await simulateRequest(requestConfig)
 
