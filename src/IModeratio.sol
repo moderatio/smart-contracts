@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import { IRuler } from "./IRuler.sol";
+
 interface IModeratio {
     // Create case for moderation
     // returns case id
-    function createCase() external returns (uint256);
+    function createCase(IRuler rulingContract) external returns (uint256);
 
-    function rule(uint256 _caseId, uint256 _decision) external;
+    function executeFuntion(uint256 caseId) external;
 }
