@@ -32,7 +32,7 @@ const requestConfig = {
   // string containing the source code to be executed
   source: fs.readFileSync(path.resolve(__dirname, "source.js")).toString(),
   // args can be accessed within the source code with `args[index]` (ie: args[0])
-  args: ["Você esta vivo? 1. Sim 2. Não\n\nResposta: {{ numero }} \n\nResposta: "],
+  args: ["0"],
   // secrets
   secrets: {
     openaiKey: process.env.OPENAI_KEY
