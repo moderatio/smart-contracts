@@ -20,7 +20,6 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         bytes32 requestId;
         bytes response;
         bytes error;
-
         // ruling
         bool executed;
     }
@@ -35,7 +34,11 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     error CaseDoesNotHaveResponse();
     error CaseAlreadyExecuted();
 
-    constructor(address oracle, uint64 _subscriptionId, uint32 _gasLimit) FunctionsClient(oracle) {
+    constructor(
+        address oracle,
+        uint64 _subscriptionId,
+        uint32 _gasLimit
+    ) FunctionsClient(oracle) {
         subscriptionId = _subscriptionId;
         gasLimit = _gasLimit;
     }
@@ -60,7 +63,6 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     function setSubscriptionId(uint64 _subscriptionId) public onlyOwner {
         subscriptionId = _subscriptionId;
     }
-
 
     function setGasLimit(uint32 _gasLimit) public onlyOwner {
         gasLimit = _gasLimit;
@@ -100,6 +102,8 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     ) external override returns (uint256 caseId) {
         caseId = currentCaseId++;
         cases[caseId].rulingContract = rulingContract;
+
+        emit NewCase(caseId, address(rulingContract));
     }
 
     function executeFunction(uint256 caseId) external override {

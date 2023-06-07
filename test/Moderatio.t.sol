@@ -20,12 +20,30 @@ contract ModeratioTest is Test {
         moderatio = new Moderatio(oracle, subscriptionId, gasLimit);
     }
 
-    function testCreateCase() public {
+    event NewCase(uint256 indexed caseId, address rulingContract);
+
+    function test_CreateCase() public {
         MockRuler ruler = new MockRuler();
+        vm.expectEmit(true, false, false, true);
+        // The event we expect
+        emit NewCase(0, address(ruler));
+        // The event we get
         uint256 caseId = moderatio.createCase(ruler);
 
         (IRuler iruler, , , , ) = moderatio.cases(caseId);
         assertEq(address(ruler), address(iruler));
         assertEq(caseId, 0);
+    }
+
+    function testFail_SetSubscriptionIdAsNotOwner() public {
+        vm.prank(address(0));
+        moderatio.setSubscriptionId(10);
+    }
+
+
+    function test_RevertWhen_SetGasLimitAsNotOwner() public {
+        vm.expectRevert( "Ownable: caller is not the owner");
+        vm.prank(address(0));
+        moderatio.setGasLimit(10);
     }
 }
