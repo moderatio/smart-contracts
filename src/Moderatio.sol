@@ -21,11 +21,12 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         bytes response;
         bytes error;
 
+        // ruling
         bool executed;
     }
 
-    uint64 public subscriptionId = 1;
-    uint32 public gasLimit = 1;
+    uint64 public subscriptionId;
+    uint32 public gasLimit;
 
     event NewCase(uint256 indexed caseId, address rulingContract);
     event CaseRuled(uint256 indexed caseId, uint256 result);
@@ -34,7 +35,10 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     error CaseDoesNotHaveResponse();
     error CaseAlreadyExecuted();
 
-    constructor(address oracle) FunctionsClient(oracle) {}
+    constructor(address oracle, uint64 _subscriptionId, uint32 _gasLimit) FunctionsClient(oracle) {
+        subscriptionId = _subscriptionId;
+        gasLimit = _gasLimit;
+    }
 
     Functions.Request private req;
 
@@ -51,6 +55,15 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         if (secrets.length > 0) {
             req.addRemoteSecrets(secrets);
         }
+    }
+
+    function setSubscriptionId(uint64 _subscriptionId) public onlyOwner {
+        subscriptionId = _subscriptionId;
+    }
+
+
+    function setGasLimit(uint32 _gasLimit) public onlyOwner {
+        gasLimit = _gasLimit;
     }
 
     function _request(uint256 caseId) private returns (bytes32 requestId) {
