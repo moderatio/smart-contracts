@@ -8,5 +8,5 @@ interface IModeratio {
     // returns case id
     function createCase(IRuler rulingContract) external returns (uint256);
 
-    function executeFuntion(uint256 caseId) external;
+    function executeFunction(uint256 caseId) external;
 }
