@@ -27,12 +27,17 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     uint64 public subscriptionId;
     uint32 public gasLimit;
 
+    bytes32 public sourceCodeHash;
+    bytes32 public secretsHash;
+
     event NewCase(uint256 indexed caseId, address rulingContract);
     event CaseRuled(uint256 indexed caseId, uint256 result);
 
     error CaseArgsLengthError();
     error CaseDoesNotHaveResponse();
     error CaseAlreadyExecuted();
+    error SourceCodeHashMismatch();
+    error SecretsHashMismatch();
 
     constructor(
         address oracle,
@@ -43,21 +48,13 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         gasLimit = _gasLimit;
     }
 
-    Functions.Request private req;
-
-    // I need to check, I don't know if this works
+    // we update only the hash and check for it
     function setRequest(
         string calldata source,
         bytes calldata secrets
-    ) public view onlyOwner {
-        req.initializeRequest(
-            Functions.Location.Inline,
-            Functions.CodeLanguage.JavaScript,
-            source
-        );
-        if (secrets.length > 0) {
-            req.addRemoteSecrets(secrets);
-        }
+    ) public onlyOwner {
+        sourceCodeHash = keccak256(bytes(source));
+        secretsHash = keccak256(secrets);
     }
 
     function setSubscriptionId(uint64 _subscriptionId) public onlyOwner {
@@ -68,7 +65,18 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         gasLimit = _gasLimit;
     }
 
-    function _request(uint256 caseId) private returns (bytes32 requestId) {
+    function _request(
+        uint256 caseId,
+        string calldata source,
+        bytes calldata secrets
+    ) private returns (bytes32 requestId) {
+        if (sourceCodeHash == keccak256(bytes(source))) {
+            revert SourceCodeHashMismatch();
+        }
+        if (secretsHash == keccak256(secrets)) {
+            revert SecretsHashMismatch();
+        }
+
         Case storage currentCase = cases[caseId];
         require(
             currentCase.requestId == 0 &&
@@ -77,6 +85,15 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         );
         string[] memory args = new string[](1);
         args[0] = Strings.toString(caseId);
+        Functions.Request memory req;
+        req.initializeRequest(
+            Functions.Location.Inline,
+            Functions.CodeLanguage.JavaScript,
+            source
+        );
+        if (secrets.length > 0) {
+            req.addRemoteSecrets(secrets);
+        }
         req.addArgs(args);
 
         bytes32 assignedReqID = sendRequest(req, subscriptionId, gasLimit);
@@ -106,8 +123,12 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         emit NewCase(caseId, address(rulingContract));
     }
 
-    function executeFunction(uint256 caseId) external override {
-        _request(caseId);
+    function executeFunction(
+        uint256 caseId,
+        string calldata source,
+        bytes calldata secrets
+    ) external override {
+        _request(caseId, source, secrets);
     }
 
     function executeRuling(uint256 caseId) external {
