@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {Functions, FunctionsClient} from "@chainlink/v0.8/functions/dev/0_0_0/FunctionsClient.sol";
 import {IModeratio} from "./IModeratio.sol";
 import {IRuler} from "./IRuler.sol";
+import {Strings} from "@openzeppelin/utils/Strings.sol";
 
 contract Moderatio is FunctionsClient, IModeratio {
     using Functions for Functions.Request;
@@ -30,9 +31,10 @@ contract Moderatio is FunctionsClient, IModeratio {
 
     constructor(address oracle) FunctionsClient(oracle) {}
 
-    Functions.Request req;
+    Functions.Request private req;
 
-    function setRequest(string calldata source, bytes calldata secrets) public {
+    // I need to check, I don't know if this works
+    function setRequest(string calldata source, bytes calldata secrets) public view {
         req.initializeRequest(
             Functions.Location.Inline,
             Functions.CodeLanguage.JavaScript,
@@ -48,8 +50,11 @@ contract Moderatio is FunctionsClient, IModeratio {
         require(
             currentCase.requestId == 0 &&
                 address(currentCase.rulingContract) != address(0)
+            , "Case does not exist"
         );
-        // TODO req.addArgs([Strings.toString(caseId)]);
+        string[] memory args = new string[](1);
+        args[0] = Strings.toString(caseId);
+        req.addArgs(args);
 
         bytes32 assignedReqID = sendRequest(req, subscriptionId, gasLimit);
         cases[caseId].requestId = assignedReqID;

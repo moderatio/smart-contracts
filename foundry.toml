@@ -6,5 +6,6 @@ libs = ["lib"]
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 remappings = [
-"@chainlink/=lib/chainlink/contracts/src/"
+"@chainlink/=lib/chainlink/contracts/src/",
+"@openzeppelin/=lib/openzeppelin-contracts/contracts/"
 ]
