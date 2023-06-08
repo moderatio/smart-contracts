@@ -6,7 +6,10 @@ import {IRuler} from "./IRuler.sol";
 interface IModeratio {
     // Create case for moderation
     // returns case id
-    function createCase(IRuler rulingContract) external returns (uint256);
+    function createCase(
+        address[] memory participants,
+        IRuler rulingContract
+    ) external returns (uint256);
 
     function executeFunction(
         uint256 caseId,
