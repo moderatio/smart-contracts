@@ -1,4 +1,3 @@
-const caseId = args[0]
 
 if (
     !secrets.openaiKey
@@ -8,6 +7,7 @@ if (
     )
 }
 
+const caseId = args[0]
 
 // get info from firebase
 const firebaseRequest = await Functions.makeHttpRequest({
@@ -32,14 +32,14 @@ For example:
 Case description: A trolley is speeding down a track, about to hit and kill five people. You have the option to pull a lever, diverting the trolley to another track where it will kill one person instead. What do you do?
 
 Threads:
-1. 2 of the 5 people are criminals.
-2. The one person is a doctor.
+0. 2 of the 5 people are criminals.
+1. The one person is a doctor.
 
 Options: 
-1. Pull the lever, diverting the trolley to the other track where it will kill one person.
-2. Do nothing, allowing the trolley to kill the five people on the current track.
+0. Pull the lever, diverting the trolley to the other track where it will kill one person.
+1. Do nothing, allowing the trolley to kill the five people on the current track.
 
-Choice: 0
+Choice: 1
 ------
 
 Case description: ${caseDescription}

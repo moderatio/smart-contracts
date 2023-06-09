@@ -22,27 +22,31 @@ contract ModeratioTest is Test {
 
     event NewCase(uint256 indexed caseId, address rulingContract);
 
-    function test_CreateCase() public {
+    function testCreateCase() public {
         MockRuler ruler = new MockRuler();
         vm.expectEmit(true, false, false, true);
         // The event we expect
         emit NewCase(0, address(ruler));
         // The event we get
-        uint256 caseId = moderatio.createCase(ruler);
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x2);
+        uint256 caseId = moderatio.createCase(participants, ruler);
 
-        (IRuler iruler, , , , ) = moderatio.cases(caseId);
+        (Moderatio.CaseStatus status, IRuler iruler, , , , , ) = moderatio
+            .cases(caseId);
         assertEq(address(ruler), address(iruler));
         assertEq(caseId, 0);
+        assertEq(uint256(status), uint256(Moderatio.CaseStatus.CREATED));
     }
 
-    function testFail_SetSubscriptionIdAsNotOwner() public {
+    function testFailSetSubscriptionIdAsNotOwner() public {
         vm.prank(address(0));
         moderatio.setSubscriptionId(10);
     }
 
-
-    function test_RevertWhen_SetGasLimitAsNotOwner() public {
-        vm.expectRevert( "Ownable: caller is not the owner");
+    function testRevertWhenSetGasLimitAsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0));
         moderatio.setGasLimit(10);
     }

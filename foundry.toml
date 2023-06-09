@@ -9,3 +9,6 @@ remappings = [
 "@chainlink/=lib/chainlink/contracts/src/",
 "@openzeppelin/=lib/openzeppelin-contracts/contracts/"
 ]
+
+[rpc_endpoints]
+polygonMumbai = "${RPC_URL}"
