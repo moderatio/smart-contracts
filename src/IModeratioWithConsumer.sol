@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import {IRuler} from "./IRuler.sol";
 
-interface IModeratioConsumer {
+interface IModeratioWithConsumer {
     // Create case for moderation
     // returns case id
     function createCase(

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.13;
 
-import {IModeratioConsumer} from "./IModeratioConsumer.sol";
+import {IModeratioWithConsumer} from "./IModeratioWithConsumer.sol";
 import {IRuler} from "./IRuler.sol";
 import {Strings} from "@openzeppelin/utils/Strings.sol";
 import {Ownable} from "@openzeppelin/access/Ownable.sol";
 
-contract ModeratioConsumer is IModeratioConsumer, Ownable {
+contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
 
     uint256 public constant MAX_DEADLINE = 3 days;
 
