@@ -40,14 +40,26 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
      */
 
     function request(string memory caseId) public {
-    Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
-    
-    string memory url = string(abi.encodePacked("front-end-moderatio.vercel.app/api/get-context?caseId=", caseId));
-    req.add("get", url);
-    
-    req.add("path", "result");
-    sendChainlinkRequest(req, (1 * LINK_DIVISIBILITY) / 10); // 0,1*10**18 LINK
+        Chainlink.Request memory req = buildChainlinkRequest(
+            jobId,
+            address(this),
+            this.fulfill.selector
+        );
+
+        string memory url = string(
+            abi.encodePacked(
+                "https://front-end-moderatio.vercel.app/api/get-context?caseId=",
+                caseId
+            )
+        );
+        req.add("get", url);
+
+        req.add("path", "result");
+        req.addInt("times", 1);
+
+        sendChainlinkRequest(req, (1 * LINK_DIVISIBILITY) / 10); // 0,1*10**18 LINK
     }
+
     /**
      * Receive the response in the form of uint256
      */
@@ -70,3 +82,4 @@ contract APIConsumer is ChainlinkClient, ConfirmedOwner {
         );
     }
 }
+
