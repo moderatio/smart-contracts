@@ -61,20 +61,13 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     error SourceCodeHashMismatch();
     error SecretsHashMismatch();
 
-    constructor(
-        address oracle,
-        uint64 _subscriptionId,
-        uint32 _gasLimit
-    ) FunctionsClient(oracle) {
+    constructor(address oracle, uint64 _subscriptionId, uint32 _gasLimit) FunctionsClient(oracle) {
         subscriptionId = _subscriptionId;
         gasLimit = _gasLimit;
     }
 
     // we update only the hash and check for it
-    function setRequest(
-        string calldata source,
-        bytes calldata secrets
-    ) public onlyOwner {
+    function setRequest(string calldata source, bytes calldata secrets) public onlyOwner {
         sourceCodeHash = keccak256(bytes(source));
         secretsHash = keccak256(secrets);
     }
@@ -87,11 +80,10 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         gasLimit = _gasLimit;
     }
 
-    function _request(
-        uint256 caseId,
-        string calldata source,
-        bytes calldata secrets
-    ) private returns (bytes32 requestId) {
+    function _request(uint256 caseId, string calldata source, bytes calldata secrets)
+        private
+        returns (bytes32 requestId)
+    {
         if (sourceCodeHash == keccak256(bytes(source))) {
             revert SourceCodeHashMismatch();
         }
@@ -106,11 +98,7 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         string[] memory args = new string[](1);
         args[0] = Strings.toString(caseId);
         Functions.Request memory req;
-        req.initializeRequest(
-            Functions.Location.Inline,
-            Functions.CodeLanguage.JavaScript,
-            source
-        );
+        req.initializeRequest(Functions.Location.Inline, Functions.CodeLanguage.JavaScript, source);
         if (secrets.length > 0) {
             req.addRemoteSecrets(secrets);
         }
@@ -123,11 +111,7 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         return assignedReqID;
     }
 
-    function fulfillRequest(
-        bytes32 requestId,
-        bytes memory response,
-        bytes memory err
-    ) internal virtual override {
+    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal virtual override {
         uint256 caseId = requestIdToCaseId[requestId];
         Case storage currentCase = cases[caseId];
 
@@ -141,10 +125,11 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         }
     }
 
-    function createCase(
-        address[] memory participants,
-        IRuler rulingContract
-    ) external override returns (uint256 caseId) {
+    function createCase(address[] memory participants, IRuler rulingContract)
+        external
+        override
+        returns (uint256 caseId)
+    {
         caseId = currentCaseId++;
         Case storage currentCase = cases[caseId];
         currentCase.status = CaseStatus.CREATED;
@@ -169,23 +154,16 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
         if (isCaseReadyToExecute(caseId)) {
             revert CaseIsReadyToExecute(caseId);
         }
-        if (
-            currentCase.contextProviders[_msgSender()] != ContextStatus.SELECTED
-        ) {
+        if (currentCase.contextProviders[_msgSender()] != ContextStatus.SELECTED) {
             revert ContextProviderNotSelected(caseId, _msgSender());
         }
-        currentCase.contextProviders[_msgSender()] = ContextStatus
-            .DROPPED_THE_MIC;
+        currentCase.contextProviders[_msgSender()] = ContextStatus.DROPPED_THE_MIC;
         currentCase.totalContextProvidersWaiting--;
 
         emit DroppedTheMic(caseId, _msgSender());
     }
 
-    function executeFunction(
-        uint256 caseId,
-        string calldata source,
-        bytes calldata secrets
-    ) external override {
+    function executeFunction(uint256 caseId, string calldata source, bytes calldata secrets) external override {
         if (!isCaseReadyToExecute(caseId)) {
             revert CaseNotReadyToExecute(caseId);
         }
@@ -211,9 +189,8 @@ contract Moderatio is FunctionsClient, IModeratio, Ownable {
     function isCaseReadyToExecute(uint256 caseId) public view returns (bool) {
         Case storage currentCase = cases[caseId];
         return
-            // solhint-disable-next-line not-rely-on-time
-            (block.timestamp > currentCase.deadline ||
-                currentCase.totalContextProvidersWaiting == 0) &&
-            currentCase.status == CaseStatus.CREATED;
+        // solhint-disable-next-line not-rely-on-time
+        (block.timestamp > currentCase.deadline || currentCase.totalContextProvidersWaiting == 0)
+            && currentCase.status == CaseStatus.CREATED;
     }
 }

@@ -4,11 +4,20 @@ pragma solidity 0.8.13;
 import {IModeratioWithConsumer} from "./IModeratioWithConsumer.sol";
 import {IRuler} from "./IRuler.sol";
 import {Strings} from "@openzeppelin/utils/Strings.sol";
-import {Ownable} from "@openzeppelin/access/Ownable.sol";
+import "@chainlink/v0.8/ChainlinkClient.sol";
+import "@chainlink/v0.8/ConfirmedOwner.sol";
 
-contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
-
+contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, ConfirmedOwner {
     uint256 public constant MAX_DEADLINE = 3 days;
+
+    using Chainlink for Chainlink.Request;
+
+    /**
+     * Chainlink anyAPI related variables
+     */
+    uint256 public caseResult;
+    bytes32 private jobId;
+    uint256 private fee;
 
     uint256 public currentCaseId = 0;
     mapping(uint256 => Case) public cases;
@@ -59,19 +68,24 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
     error SourceCodeHashMismatch();
     error SecretsHashMismatch();
 
-    constructor(
-        address oracle,
-        uint64 _subscriptionId,
-        uint32 _gasLimit
-    ) {
-        
+    /**
+     * @notice Initialize the link token and target oracle
+     *
+     * Sepolia Testnet details:
+     * Link Token: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB
+     * Oracle: 0x40193c8518BB267228Fc409a613bDbD8eC5a97b3 (oracle on mumbai testnet)
+     * jobId: ca98366cc7314957b8c012c72f05aeeb
+     *
+     */
+    constructor() ConfirmedOwner(msg.sender) {
+        setChainlinkToken(0x326C977E6efc84E512bB9C30f76E30c160eD06FB);
+        setChainlinkOracle(0x40193c8518BB267228Fc409a613bDbD8eC5a97b3);
+        jobId = "ca98366cc7314957b8c012c72f05aeeb";
+        fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
     }
 
     // we update only the hash and check for it
-    function setRequest(
-        string calldata source,
-        bytes calldata secrets
-    ) public onlyOwner {
+    function setRequest(string calldata source, bytes calldata secrets) public onlyOwner {
         sourceCodeHash = keccak256(bytes(source));
         secretsHash = keccak256(secrets);
     }
@@ -84,12 +98,11 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
         gasLimit = _gasLimit;
     }
 
-
-
-    function createCase(
-        address[] memory participants,
-        IRuler rulingContract
-    ) external override returns (uint256 caseId) {
+    function createCase(address[] memory participants, IRuler rulingContract)
+        external
+        override
+        returns (uint256 caseId)
+    {
         caseId = currentCaseId++;
         Case storage currentCase = cases[caseId];
         currentCase.status = CaseStatus.CREATED;
@@ -98,6 +111,7 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
         // solhint-disable-next-line not-rely-on-time
         currentCase.deadline = block.timestamp + MAX_DEADLINE;
 
+        //TODO: check if every address is unique
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             currentCase.contextProviders[participant] = ContextStatus.SELECTED;
@@ -114,18 +128,14 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
         if (isCaseReadyToExecute(caseId)) {
             revert CaseIsReadyToExecute(caseId);
         }
-        if (
-            currentCase.contextProviders[_msgSender()] != ContextStatus.SELECTED
-        ) {
-            revert ContextProviderNotSelected(caseId, _msgSender());
+        if (currentCase.contextProviders[msg.sender] != ContextStatus.SELECTED) {
+            revert ContextProviderNotSelected(caseId, msg.sender);
         }
-        currentCase.contextProviders[_msgSender()] = ContextStatus
-            .DROPPED_THE_MIC;
+        currentCase.contextProviders[msg.sender] = ContextStatus.DROPPED_THE_MIC;
         currentCase.totalContextProvidersWaiting--;
 
-        emit DroppedTheMic(caseId, _msgSender());
+        emit DroppedTheMic(caseId, msg.sender);
     }
-
 
     function executeRuling(uint256 caseId) external {
         // CHECKS
@@ -146,9 +156,8 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, Ownable {
     function isCaseReadyToExecute(uint256 caseId) public view returns (bool) {
         Case storage currentCase = cases[caseId];
         return
-            // solhint-disable-next-line not-rely-on-time
-            (block.timestamp > currentCase.deadline ||
-                currentCase.totalContextProvidersWaiting == 0) &&
-            currentCase.status == CaseStatus.CREATED;
+        // solhint-disable-next-line not-rely-on-time
+        (block.timestamp > currentCase.deadline || currentCase.totalContextProvidersWaiting == 0)
+            && currentCase.status == CaseStatus.CREATED;
     }
 }
