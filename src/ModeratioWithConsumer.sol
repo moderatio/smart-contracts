@@ -146,7 +146,7 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
 
         string memory url =
-            string(abi.encodePacked("https://front-end-moderatio.vercel.app/api/get-context?caseId=", caseId));
+            string(abi.encodePacked("https://front-end-navy-three.vercel.app/api/get-context?caseId=", caseId));
         req.add("get", url);
 
         req.add("path", "result");
