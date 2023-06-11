@@ -26,8 +26,6 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     enum CaseStatus {
         NONE,
         CREATED,
-        REQUESTED,
-        READY_TO_EXECUTE,
         EXECUTED
     }
 
@@ -129,6 +127,9 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         }
         currentCase.contextProviders[msg.sender] = ContextStatus.DROPPED_THE_MIC;
         currentCase.totalContextProvidersWaiting--;
+        if (currentCase.totalContextProvidersWaiting == 0) {
+            request(caseId);
+        }
 
         emit DroppedTheMic(caseId, msg.sender);
     }
