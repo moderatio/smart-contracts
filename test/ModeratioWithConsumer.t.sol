@@ -75,6 +75,20 @@ contract ModeratioWithConsumerTest is Test {
         moderatio.dropTheMic(0);
     }
 
+    function testDropTheMicSingleProvider() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        caseId = moderatio.createCase(participants, ruler);
+
+        // console.log(caseId);
+        vm.prank(address(0x1));
+
+        vm.expectEmit(true, false, false, true);
+        // The event we expect
+        emit DroppedTheMic(0, address(0x1));
+        moderatio.dropTheMic(0);
+    }
+
     function test_RevertIf_ContextProviderNotSelected() public {
         address[] memory participants = new address[](2);
         participants[0] = address(0x1);

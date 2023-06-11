@@ -67,7 +67,8 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     error SourceCodeHashMismatch();
     error SecretsHashMismatch();
 
-    event DataFullfilled(bytes32 indexed requestId, uint256 volume);
+    event DataRequested(bytes32 indexed requestId, uint256 caseId);
+    event DataFullfilled(bytes32 indexed requestId, uint256 result);
 
     /**
      * @notice Initialize the link token and target oracle
@@ -127,11 +128,12 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         }
         currentCase.contextProviders[msg.sender] = ContextStatus.DROPPED_THE_MIC;
         currentCase.totalContextProvidersWaiting--;
+
+        emit DroppedTheMic(caseId, msg.sender);
+
         if (currentCase.totalContextProvidersWaiting == 0) {
             request(caseId);
         }
-
-        emit DroppedTheMic(caseId, msg.sender);
     }
 
     /**
@@ -154,6 +156,7 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
 
         requestId = sendChainlinkRequest(req, (1 * LINK_DIVISIBILITY) / 10); // 0,1*10**18 LINK
         requestIdToCaseId[requestId] = caseId;
+        emit DataRequested(requestId, caseId);
         return requestId;
     }
 

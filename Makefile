@@ -23,6 +23,10 @@ deploy-moderatio:
 deploy-with-consumer:
 	forge script script/ModeratioWithConsumer.s.sol:DeployModeratioWithConsumer --rpc-url ${RPC_URL} --verify --broadcast -vvvv
 
+deploy-basic-ruler: 
+	forge script script/DeployRuler.s.sol:DeployBasicRuler --fork-url ${RPC_URL}  --broadcast -vvvv
+
+
 verify-with-consumer:
 	forge verify-contract \
 		--chain-id 80001 \
