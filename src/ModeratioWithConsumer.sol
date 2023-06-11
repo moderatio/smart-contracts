@@ -36,7 +36,7 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         IRuler rulingContract;
         // chainlink functions
         bytes32 requestId;
-        bytes response;
+        uint256 result;
         bytes error;
         // ruling
         mapping(address => ContextStatus) contextProviders;
@@ -68,6 +68,8 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     error SourceCodeHashMismatch();
     error SecretsHashMismatch();
 
+    event DataFullfilled(bytes32 indexed requestId, uint256 volume);
+
     /**
      * @notice Initialize the link token and target oracle
      *
@@ -82,20 +84,6 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         setChainlinkOracle(_oracle);
         jobId = _jobId;
         fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
-    }
-
-    // we update only the hash and check for it
-    function setRequest(string calldata source, bytes calldata secrets) public onlyOwner {
-        sourceCodeHash = keccak256(bytes(source));
-        secretsHash = keccak256(secrets);
-    }
-
-    function setSubscriptionId(uint64 _subscriptionId) public onlyOwner {
-        subscriptionId = _subscriptionId;
-    }
-
-    function setGasLimit(uint32 _gasLimit) public onlyOwner {
-        gasLimit = _gasLimit;
     }
 
     function createCase(address[] memory participants, IRuler rulingContract)
@@ -141,20 +129,54 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         emit DroppedTheMic(caseId, msg.sender);
     }
 
-    function executeRuling(uint256 caseId) external {
+    /**
+     * @notice Creates a Chainlink request to retrieve the case result
+     * achieved by gpt-3
+     * @return requestId - id of the request
+     */
+    function request(uint256 caseId) public returns (bytes32 requestId) {
+        if (!isCaseReadyToExecute(caseId)) {
+            revert CaseNotReadyToExecute(caseId);
+        }
+        Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
+
+        string memory url =
+            string(abi.encodePacked("https://front-end-moderatio.vercel.app/api/get-context?caseId=", caseId));
+        req.add("get", url);
+
+        req.add("path", "result");
+        req.addInt("times", 1);
+
+        requestId = sendChainlinkRequest(req, (1 * LINK_DIVISIBILITY) / 10); // 0,1*10**18 LINK
+        requestIdToCaseId[requestId] = caseId;
+        return requestId;
+    }
+
+    /**
+     * @notice Receives the response in the form of uint256
+     *
+     * @param requestId - id of the request
+     * @param  result- response, the index of the outcome that GPT-3 chose from the outcomes list
+     */
+    function fulfill(bytes32 requestId, uint256 result) public recordChainlinkFulfillment(requestId) {
+        _executeRuling(requestIdToCaseId[requestId], result);
+        emit DataFullfilled(requestId, result);
+    }
+
+    function _executeRuling(uint256 caseId, uint256 result) internal {
         // CHECKS
         Case storage currentCase = cases[caseId];
-        if (currentCase.status != CaseStatus.READY_TO_EXECUTE) {
-            revert CaseInWrongStatus(caseId, CaseStatus.READY_TO_EXECUTE);
+        if (!isCaseReadyToExecute(caseId)) {
+            revert CaseNotReadyToExecute(caseId);
         }
         // EFFECTS
-        uint256 rulingResult = abi.decode(currentCase.response, (uint256));
+        currentCase.result = result;
         currentCase.status = CaseStatus.EXECUTED;
 
         // INTERACTIONS
-        currentCase.rulingContract.rule(caseId, rulingResult);
+        currentCase.rulingContract.rule(caseId, result);
 
-        emit CaseRuled(caseId, rulingResult);
+        emit CaseRuled(caseId, result);
     }
 
     function isCaseReadyToExecute(uint256 caseId) public view returns (bool) {

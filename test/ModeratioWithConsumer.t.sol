@@ -14,14 +14,20 @@ contract ModeratioWithConsumerTest is Test {
     MockRuler ruler;
     bytes32 jobId;
     uint256 caseId;
+    bytes32 blank_bytes32;
+
+    uint256 constant RESPONSE = 0;
 
     event NewCase(uint256 indexed caseId, address rulingContract);
+    event DroppedTheMic(uint256 indexed caseId, address contextProvider);
 
     function setUp() public {
         linkToken = new LinkToken();
         mockOracle = new MockOracle(address(linkToken));
         moderatio = new ModeratioWithConsumer(address(mockOracle), jobId, address(linkToken));
         ruler = new MockRuler();
+        uint256 AMOUNT = 1 * 10 ** 18;
+        linkToken.transfer(address(moderatio), AMOUNT);
     }
 
     function testCreateCase() public {
@@ -45,11 +51,52 @@ contract ModeratioWithConsumerTest is Test {
     }
 
     function testDropTheMic() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x2);
+        caseId = moderatio.createCase(participants, ruler);
+
         // console.log(caseId);
-        // (ModeratioWithConsumer.CaseStatus status, IRuler iruler,,,,,) = moderatio.cases(caseId);
-        // assertEq(address(ruler), address(iruler));
-        // assertEq(caseId, 0);
-        // vm.prank(address(0x1));
-        // moderatio.dropTheMic(0);
+        vm.prank(address(0x1));
+
+        vm.expectEmit(true, false, false, true);
+        // The event we expect
+        emit DroppedTheMic(0, address(0x1));
+        moderatio.dropTheMic(0);
+    }
+
+    function testRequest() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x2);
+        caseId = moderatio.createCase(participants, ruler);
+
+        // console.log(caseId);
+        vm.prank(address(0x1));
+        // The event we expect
+        moderatio.dropTheMic(0);
+        vm.prank(address(0x2));
+        moderatio.dropTheMic(0);
+
+        bytes32 requestId = moderatio.request(caseId);
+        assertTrue(requestId != blank_bytes32);
+    }
+
+    function testRequestFulfill() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x2);
+        caseId = moderatio.createCase(participants, ruler);
+
+        // console.log(caseId);
+        vm.prank(address(0x1));
+        // The event we expect
+        moderatio.dropTheMic(0);
+        vm.prank(address(0x2));
+        moderatio.dropTheMic(0);
+
+        bytes32 requestId = moderatio.request(caseId);
+
+        mockOracle.fulfillOracleRequest(requestId, bytes32(RESPONSE));
     }
 }
