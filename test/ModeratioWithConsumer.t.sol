@@ -4,14 +4,21 @@ import "forge-std/Test.sol";
 import "../src/ModeratioWithConsumer.sol";
 import {MockRuler} from "./mock/RulingContract.sol";
 import {IRuler} from "../src/IRuler.sol";
+import {LinkToken} from "./mock/LinkToken.sol";
+import {MockOracle} from "./mock/MockOracle.sol";
 
 contract ModeratioWithConsumerTest is Test {
     ModeratioWithConsumer public moderatio;
+    LinkToken public linkToken;
+    MockOracle public mockOracle;
+    bytes32 jobId;
 
     event NewCase(uint256 indexed caseId, address rulingContract);
 
     function setUp() public {
-        moderatio = new ModeratioWithConsumer();
+        linkToken = new LinkToken();
+        mockOracle = new MockOracle(address(linkToken));
+        moderatio = new ModeratioWithConsumer(address(mockOracle), jobId, address(linkToken));
     }
 
     function testCreateCase() public {

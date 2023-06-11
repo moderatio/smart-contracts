@@ -77,10 +77,10 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
      * jobId: ca98366cc7314957b8c012c72f05aeeb
      *
      */
-    constructor() ConfirmedOwner(msg.sender) {
-        setChainlinkToken(0x326C977E6efc84E512bB9C30f76E30c160eD06FB);
-        setChainlinkOracle(0x40193c8518BB267228Fc409a613bDbD8eC5a97b3);
-        jobId = "ca98366cc7314957b8c012c72f05aeeb";
+    constructor(address _oracle, bytes32 _jobId, address _link) ConfirmedOwner(msg.sender) {
+        setChainlinkToken(_link);
+        setChainlinkOracle(_oracle);
+        jobId = _jobId;
         fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
     }
 
