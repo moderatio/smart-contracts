@@ -37,5 +37,8 @@ verify-with-consumer:
 
 
 
+export-consumer-abi:
+	rm -rf abi && mkdir abi && forge inspect src/ModeratioWithConsumer.sol:ModeratioWithConsumer abi > abi/ModeratioWithConsumer.json	
+
 export-abi:
 	rm -rf abi && mkdir abi && forge inspect src/Moderatio.sol:Moderatio abi > abi/Moderatio.json
