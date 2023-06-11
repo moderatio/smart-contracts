@@ -163,12 +163,12 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     /**
      * @notice Receives the response in the form of uint256
      *
-     * @param requestId - id of the request
+     * @param _requestId - id of the request
      * @param  result- response, the index of the outcome that GPT-3 chose from the outcomes list
      */
-    function fulfill(bytes32 requestId, uint256 result) public recordChainlinkFulfillment(requestId) {
-        _executeRuling(requestIdToCaseId[requestId], result);
-        emit DataFullfilled(requestId, result);
+    function fulfill(bytes32 _requestId, uint256 result) public recordChainlinkFulfillment(_requestId) {
+        _executeRuling(requestIdToCaseId[_requestId], result);
+        emit DataFullfilled(_requestId, result);
     }
 
     function _executeRuling(uint256 caseId, uint256 result) internal {

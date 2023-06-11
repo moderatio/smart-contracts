@@ -21,7 +21,8 @@ deploy-moderatio:
 	forge script script/Moderatio.s.sol:DeployModeratio --fork-url ${RPC_URL}  --broadcast -vvvv
 
 deploy-with-consumer:
-	forge script script/ModeratioWithConsumer.s.sol:DeployModeratioWithConsumer --rpc-url ${RPC_URL} --verify --broadcast -vvvv
+	forge script script/ModeratioWithConsumer.s.sol:DeployModeratioWithConsumer --rpc-url ${RPC_URL} \
+	--verify --broadcast -vvvv
 
 deploy-basic-ruler: 
 	forge script script/DeployRuler.s.sol:DeployBasicRuler --fork-url ${RPC_URL}  --broadcast -vvvv
@@ -29,15 +30,26 @@ deploy-basic-ruler:
 
 verify-with-consumer:
 	forge verify-contract \
-		--chain-id 80001 \
 		--watch \
-	--constructor-args "$(cast abi-encode 'constructor(address,bytes32,address)' '0x40193c8518BB267228Fc409a613bDbD8eC5a97b3' "$(cast --format-bytes32-string 'ca98366cc7314957b8c012c72f05aeeb')" '0x326C977E6efc84E512bB9C30f76E30c160eD06FB')" \
+	--constructor-args "$(cast abi-encode 'constructor(address,bytes32,address)' '0x40193c8518BB267228Fc409a613bDbD8eC5a97b3' ca98366cc7314957b8c012c72f05aeeb '0x326C977E6efc84E512bB9C30f76E30c160eD06FB')" \
 		--etherscan-api-key ${MUMBAI_SCAN_KEY} \
 		--compiler-version v0.8.13+commit.abaa5c0e \
-		0x599f0f9ca284f211294edd7534bd427e11742ee4 \
+		--chain 80001 \
+		0xe8c77fc8d5173e8eae0a90ee6d8d0dfdeb0c537e \
 		src/ModeratioWithConsumer.sol:ModeratioWithConsumer
 
+verify-ruler:
+	forge verify-contract \
+		--watch \
+		--etherscan-api-key ${MUMBAI_SCAN_KEY} \
+		--compiler-version v0.8.13+commit.abaa5c0e \
+		--chain 80001 \
+		0x22b71291022b9fe139ebad84a6309d4966e22601 \
+		src/BasicRuler.sol:BasicRuler
 
+
+flatten-moderatio:
+	forge flatten src/ModeratioWithConsumer.sol -o flattened.sol
 
 
 
