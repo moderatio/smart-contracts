@@ -64,6 +64,7 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     error CaseInWrongStatus(uint256 caseId, CaseStatus desiredStatus);
     error CaseNotReadyToExecute(uint256 caseId);
     error CaseIsReadyToExecute(uint256 caseId);
+    error DuplicateParticipant(address dup);
     error ContextProviderNotSelected(uint256 caseId, address provider);
     error SourceCodeHashMismatch();
     error SecretsHashMismatch();
@@ -101,10 +102,9 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
 
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
-            require(
-                currentCase.contextProviders[participant] == ContextStatus.NOT_SELECTED,
-                "Participant address already added"
-            );
+            if (currentCase.contextProviders[participant] != ContextStatus.NOT_SELECTED) {
+                revert DuplicateParticipant(participant);
+            }
 
             currentCase.contextProviders[participant] = ContextStatus.SELECTED;
         }

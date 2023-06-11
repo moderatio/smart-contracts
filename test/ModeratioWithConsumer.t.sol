@@ -18,6 +18,8 @@ contract ModeratioWithConsumerTest is Test {
 
     uint256 constant RESPONSE = 0;
 
+    error ContextProviderNotSelected(uint256 caseId, address provider);
+
     event NewCase(uint256 indexed caseId, address rulingContract);
     event DroppedTheMic(uint256 indexed caseId, address contextProvider);
 
@@ -50,6 +52,14 @@ contract ModeratioWithConsumerTest is Test {
         moderatio.dropTheMic(0);
     }
 
+    function test_RevertIf_duplicateParticipant() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x1);
+        vm.expectRevert();
+        caseId = moderatio.createCase(participants, ruler);
+    }
+
     function testDropTheMic() public {
         address[] memory participants = new address[](2);
         participants[0] = address(0x1);
@@ -62,6 +72,18 @@ contract ModeratioWithConsumerTest is Test {
         vm.expectEmit(true, false, false, true);
         // The event we expect
         emit DroppedTheMic(0, address(0x1));
+        moderatio.dropTheMic(0);
+    }
+
+    function test_RevertIf_ContextProviderNotSelected() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x2);
+        caseId = moderatio.createCase(participants, ruler);
+
+        vm.prank(address(0x3));
+
+        vm.expectRevert(abi.encodeWithSelector(ContextProviderNotSelected.selector, 0, address(0x3)));
         moderatio.dropTheMic(0);
     }
 
