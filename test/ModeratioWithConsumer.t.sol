@@ -104,6 +104,22 @@ contract ModeratioWithConsumerTest is Test {
         assertTrue(requestId != blank_bytes32);
     }
 
+    function testGetCaseParticipantsStatus() public {
+        address[] memory participants = new address[](2);
+        participants[0] = address(0x1);
+        participants[1] = address(0x2);
+        caseId = moderatio.createCase(participants, ruler);
+
+        ModeratioWithConsumer.ContextStatus status = moderatio.getCaseContextProviderStatus(caseId, address(0x1));
+        assertTrue(status == ModeratioWithConsumer.ContextStatus.SELECTED);
+
+        vm.prank(address(0x1));
+        moderatio.dropTheMic(0);
+
+        status = moderatio.getCaseContextProviderStatus(caseId, address(0x1));
+        assertTrue(status == ModeratioWithConsumer.ContextStatus.DROPPED_THE_MIC);
+    }
+
     function testRequestFulfill() public {
         address[] memory participants = new address[](2);
         participants[0] = address(0x1);

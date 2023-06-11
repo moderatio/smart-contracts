@@ -87,6 +87,10 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
     }
 
+    function getCaseContextProviderStatus(uint256 caseId, address participant) public view returns (ContextStatus) {
+        return cases[caseId].contextProviders[participant];
+    }
+
     function createCase(address[] memory participants, IRuler rulingContract)
         external
         override
