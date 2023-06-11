@@ -111,9 +111,13 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         // solhint-disable-next-line not-rely-on-time
         currentCase.deadline = block.timestamp + MAX_DEADLINE;
 
-        //TODO: check if every address is unique
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
+            require(
+                currentCase.contextProviders[participant] == ContextStatus.NOT_SELECTED,
+                "Participant address already added"
+            );
+
             currentCase.contextProviders[participant] = ContextStatus.SELECTED;
         }
 
