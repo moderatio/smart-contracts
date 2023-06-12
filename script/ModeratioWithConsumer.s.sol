@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.13;
+pragma solidity ^0.8.13;
 
 /* solhint-disable no-global-import */
 import "forge-std/Script.sol";
@@ -26,8 +26,8 @@ contract DeployModeratioWithConsumer is Script {
          */
 
         ModeratioWithConsumer moderatio = new ModeratioWithConsumer(
-        0x40193c8518BB267228Fc409a613bDbD8eC5a97b3,
-        0x326C977E6efc84E512bB9C30f76E30c160eD06FB
+            0x40193c8518BB267228Fc409a613bDbD8eC5a97b3,
+            0x326C977E6efc84E512bB9C30f76E30c160eD06FB
         );
 
         vm.stopBroadcast();

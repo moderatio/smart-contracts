@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.13;
+pragma solidity ^0.8.13;
 
 import {IModeratioWithConsumer} from "./IModeratioWithConsumer.sol";
 import {IRuler} from "./IRuler.sol";
 import {Strings} from "@openzeppelin/utils/Strings.sol";
-import "@chainlink/v0.8/ChainlinkClient.sol";
-import "@chainlink/v0.8/ConfirmedOwner.sol";
+import {ChainlinkClient} from "@chainlink/v0.8/ChainlinkClient.sol";
+import {Chainlink} from "@chainlink/v0.8/Chainlink.sol";
+import {ConfirmedOwner} from "@chainlink/v0.8/ConfirmedOwner.sol";
+import {Strings} from "@openzeppelin/utils/Strings.sol";
 
-contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, ConfirmedOwner {
+contract ModeratioWithConsumer is
+    IModeratioWithConsumer,
+    ChainlinkClient,
+    ConfirmedOwner
+{
     uint256 public constant MAX_DEADLINE = 3 days;
 
     using Chainlink for Chainlink.Request;
@@ -89,15 +95,17 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
     }
 
-    function getCaseContextProviderStatus(uint256 caseId, address participant) public view returns (ContextStatus) {
+    function getCaseContextProviderStatus(
+        uint256 caseId,
+        address participant
+    ) public view returns (ContextStatus) {
         return cases[caseId].contextProviders[participant];
     }
 
-    function createCase(address[] memory participants, IRuler rulingContract)
-        external
-        override
-        returns (uint256 caseId)
-    {
+    function createCase(
+        address[] memory participants,
+        IRuler rulingContract
+    ) external override returns (uint256 caseId) {
         caseId = currentCaseId++;
         Case storage currentCase = cases[caseId];
         currentCase.status = CaseStatus.CREATED;
@@ -108,7 +116,10 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
 
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
-            if (currentCase.contextProviders[participant] != ContextStatus.NOT_SELECTED) {
+            if (
+                currentCase.contextProviders[participant] !=
+                ContextStatus.NOT_SELECTED
+            ) {
                 revert DuplicateParticipant(participant);
             }
 
@@ -126,10 +137,13 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         if (isCaseReadyToRequest(caseId)) {
             revert CaseIsReadyToExecute(caseId);
         }
-        if (currentCase.contextProviders[msg.sender] != ContextStatus.SELECTED) {
+        if (
+            currentCase.contextProviders[msg.sender] != ContextStatus.SELECTED
+        ) {
             revert ContextProviderNotSelected(caseId, msg.sender);
         }
-        currentCase.contextProviders[msg.sender] = ContextStatus.DROPPED_THE_MIC;
+        currentCase.contextProviders[msg.sender] = ContextStatus
+            .DROPPED_THE_MIC;
         currentCase.totalContextProvidersWaiting--;
 
         emit DroppedTheMic(caseId, msg.sender);
@@ -144,16 +158,23 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         if (!isCaseReadyToRequest(caseId)) {
             revert CaseNotReadyToRequest(caseId);
         }
-        Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
+        Chainlink.Request memory req = buildChainlinkRequest(
+            jobId,
+            address(this),
+            this.fulfill.selector
+        );
 
-        string memory url =
-            string(abi.encodePacked("https://front-end-navy-three.vercel.app/api/get-context?caseId=", caseId));
+        string memory url = string(
+            abi.encodePacked(
+                "https://front-end-navy-three.vercel.app/api/get-context?caseId=",
+                Strings.toString(caseId)
+            )
+        );
         req.add("get", url);
-
         req.add("path", "result");
         req.addInt("times", 1);
 
-        requestId = sendChainlinkRequest(req, (1 * LINK_DIVISIBILITY) / 10); // 0,1*10**18 LINK
+        requestId = sendChainlinkRequest(req, fee); // 0,1*10**18 LINK
         requestIdToCaseId[requestId] = caseId;
         emit DataRequested(requestId, caseId);
         return requestId;
@@ -165,8 +186,12 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
      * @param _requestId - id of the request
      * @param  result- response, the index of the outcome that GPT-3 chose from the outcomes list
      */
-    function fulfill(bytes32 _requestId, uint256 result) public recordChainlinkFulfillment(_requestId) {
-        cases[requestIdToCaseId[_requestId]].status = CaseStatus.READY_TO_EXECUTE;
+    function fulfill(
+        bytes32 _requestId,
+        uint256 result
+    ) public recordChainlinkFulfillment(_requestId) {
+        cases[requestIdToCaseId[_requestId]].status = CaseStatus
+            .READY_TO_EXECUTE;
         cases[requestIdToCaseId[_requestId]].result = result;
         emit DataFullfilled(_requestId, result);
     }
@@ -189,8 +214,9 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     function isCaseReadyToRequest(uint256 caseId) public view returns (bool) {
         Case storage currentCase = cases[caseId];
         return
-        // solhint-disable-next-line not-rely-on-time
-        (block.timestamp > currentCase.deadline || currentCase.totalContextProvidersWaiting == 0)
-            && currentCase.status == CaseStatus.CREATED;
+            // solhint-disable-next-line not-rely-on-time
+            (block.timestamp > currentCase.deadline ||
+                currentCase.totalContextProvidersWaiting == 0) &&
+            currentCase.status == CaseStatus.CREATED;
     }
 }
