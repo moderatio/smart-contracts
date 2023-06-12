@@ -16,7 +16,7 @@ contract ModeratioWithConsumerTest is Test {
     uint256 caseId;
     bytes32 blank_bytes32;
 
-    uint256 constant RESPONSE = 0;
+    uint256 constant RESPONSE = 1;
 
     error ContextProviderNotSelected(uint256 caseId, address provider);
 
@@ -28,14 +28,14 @@ contract ModeratioWithConsumerTest is Test {
         mockOracle = new MockOracle(address(linkToken));
         moderatio = new ModeratioWithConsumer(address(mockOracle), jobId, address(linkToken));
         ruler = new MockRuler();
-        uint256 AMOUNT = 1 * 10 ** 18;
-        linkToken.transfer(address(moderatio), AMOUNT);
+        uint256 amount = 1 * 10 ** 18;
+        linkToken.transfer(address(moderatio), amount);
     }
 
     function testCreateCase() public {
         vm.expectEmit(true, false, false, true);
         // The event we expect
-        emit NewCase(0, address(ruler));
+        emit NewCase(1, address(ruler));
         // The event we get
         address[] memory participants = new address[](2);
         participants[0] = address(0x1);
@@ -44,12 +44,12 @@ contract ModeratioWithConsumerTest is Test {
 
         (ModeratioWithConsumer.CaseStatus status, IRuler iruler,,,,,) = moderatio.cases(caseId);
         assertEq(address(ruler), address(iruler));
-        assertEq(caseId, 0);
+        assertEq(caseId, 1);
         assertEq(uint256(status), uint256(ModeratioWithConsumer.CaseStatus.CREATED));
 
-        assertEq(caseId, 0);
+        assertEq(caseId, 1);
         vm.prank(address(0x1));
-        moderatio.dropTheMic(0);
+        moderatio.dropTheMic(1);
     }
 
     function test_RevertIf_duplicateParticipant() public {
@@ -71,8 +71,8 @@ contract ModeratioWithConsumerTest is Test {
 
         vm.expectEmit(true, false, false, true);
         // The event we expect
-        emit DroppedTheMic(0, address(0x1));
-        moderatio.dropTheMic(0);
+        emit DroppedTheMic(1, address(0x1));
+        moderatio.dropTheMic(1);
     }
 
     function testDropTheMicSingleProvider() public {
@@ -85,8 +85,8 @@ contract ModeratioWithConsumerTest is Test {
 
         vm.expectEmit(true, false, false, true);
         // The event we expect
-        emit DroppedTheMic(0, address(0x1));
-        moderatio.dropTheMic(0);
+        emit DroppedTheMic(1, address(0x1));
+        moderatio.dropTheMic(1);
     }
 
     function test_RevertIf_ContextProviderNotSelected() public {
@@ -97,8 +97,8 @@ contract ModeratioWithConsumerTest is Test {
 
         vm.prank(address(0x3));
 
-        vm.expectRevert(abi.encodeWithSelector(ContextProviderNotSelected.selector, 0, address(0x3)));
-        moderatio.dropTheMic(0);
+        vm.expectRevert(abi.encodeWithSelector(ContextProviderNotSelected.selector, 1, address(0x3)));
+        moderatio.dropTheMic(1);
     }
 
     function testRequest() public {
@@ -110,9 +110,9 @@ contract ModeratioWithConsumerTest is Test {
         // console.log(caseId);
         vm.prank(address(0x1));
         // The event we expect
-        moderatio.dropTheMic(0);
+        moderatio.dropTheMic(1);
         vm.prank(address(0x2));
-        moderatio.dropTheMic(0);
+        moderatio.dropTheMic(1);
 
         bytes32 requestId = moderatio.request(caseId);
         assertTrue(requestId != blank_bytes32);
@@ -128,7 +128,7 @@ contract ModeratioWithConsumerTest is Test {
         assertTrue(status == ModeratioWithConsumer.ContextStatus.SELECTED);
 
         vm.prank(address(0x1));
-        moderatio.dropTheMic(0);
+        moderatio.dropTheMic(1);
 
         status = moderatio.getCaseContextProviderStatus(caseId, address(0x1));
         assertTrue(status == ModeratioWithConsumer.ContextStatus.DROPPED_THE_MIC);
@@ -143,12 +143,14 @@ contract ModeratioWithConsumerTest is Test {
         // console.log(caseId);
         vm.prank(address(0x1));
         // The event we expect
-        moderatio.dropTheMic(0);
+        moderatio.dropTheMic(1);
         vm.prank(address(0x2));
-        moderatio.dropTheMic(0);
+        moderatio.dropTheMic(1);
 
         bytes32 requestId = moderatio.request(caseId);
 
         mockOracle.fulfillOracleRequest(requestId, bytes32(RESPONSE));
+
+        moderatio.executeRuling(caseId);
     }
 }

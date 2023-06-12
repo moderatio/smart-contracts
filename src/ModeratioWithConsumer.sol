@@ -19,13 +19,14 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
     bytes32 private jobId;
     uint256 private fee;
 
-    uint256 public currentCaseId = 0;
+    uint256 public currentCaseId = 1;
     mapping(uint256 => Case) public cases;
     mapping(bytes32 => uint256) public requestIdToCaseId;
 
     enum CaseStatus {
         NONE,
         CREATED,
+        READY_TO_EXECUTE,
         EXECUTED
     }
 
@@ -56,11 +57,13 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
 
     event NewCase(uint256 indexed caseId, address rulingContract);
     event DroppedTheMic(uint256 indexed caseId, address contextProvider);
-    event CaseRuled(uint256 indexed caseId, uint256 result);
+    event CaseRuled(uint256 indexed caseId);
 
     error CaseDoesNotExist(uint256 caseId);
     error CaseInWrongStatus(uint256 caseId, CaseStatus desiredStatus);
+    error CaseNotReadyToRequest(uint256 caseId);
     error CaseNotReadyToExecute(uint256 caseId);
+
     error CaseIsReadyToExecute(uint256 caseId);
     error DuplicateParticipant(address dup);
     error ContextProviderNotSelected(uint256 caseId, address provider);
@@ -120,7 +123,7 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         if (currentCase.status != CaseStatus.CREATED) {
             revert CaseInWrongStatus(caseId, CaseStatus.CREATED);
         }
-        if (isCaseReadyToExecute(caseId)) {
+        if (isCaseReadyToRequest(caseId)) {
             revert CaseIsReadyToExecute(caseId);
         }
         if (currentCase.contextProviders[msg.sender] != ContextStatus.SELECTED) {
@@ -130,10 +133,6 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
         currentCase.totalContextProvidersWaiting--;
 
         emit DroppedTheMic(caseId, msg.sender);
-
-        if (currentCase.totalContextProvidersWaiting == 0) {
-            request(caseId);
-        }
     }
 
     /**
@@ -142,8 +141,8 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
      * @return requestId - id of the request
      */
     function request(uint256 caseId) public returns (bytes32 requestId) {
-        if (!isCaseReadyToExecute(caseId)) {
-            revert CaseNotReadyToExecute(caseId);
+        if (!isCaseReadyToRequest(caseId)) {
+            revert CaseNotReadyToRequest(caseId);
         }
         Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
 
@@ -167,27 +166,27 @@ contract ModeratioWithConsumer is IModeratioWithConsumer, ChainlinkClient, Confi
      * @param  result- response, the index of the outcome that GPT-3 chose from the outcomes list
      */
     function fulfill(bytes32 _requestId, uint256 result) public recordChainlinkFulfillment(_requestId) {
-        _executeRuling(requestIdToCaseId[_requestId], result);
+        cases[requestIdToCaseId[_requestId]].status = CaseStatus.READY_TO_EXECUTE;
+        cases[requestIdToCaseId[_requestId]].result = result;
         emit DataFullfilled(_requestId, result);
     }
 
-    function _executeRuling(uint256 caseId, uint256 result) internal {
+    function executeRuling(uint256 caseId) external {
         // CHECKS
         Case storage currentCase = cases[caseId];
-        if (!isCaseReadyToExecute(caseId)) {
+        if (currentCase.status != CaseStatus.READY_TO_EXECUTE) {
             revert CaseNotReadyToExecute(caseId);
         }
         // EFFECTS
-        currentCase.result = result;
         currentCase.status = CaseStatus.EXECUTED;
 
         // INTERACTIONS
-        currentCase.rulingContract.rule(caseId, result);
+        currentCase.rulingContract.rule(caseId, currentCase.result);
 
-        emit CaseRuled(caseId, result);
+        emit CaseRuled(caseId);
     }
 
-    function isCaseReadyToExecute(uint256 caseId) public view returns (bool) {
+    function isCaseReadyToRequest(uint256 caseId) public view returns (bool) {
         Case storage currentCase = cases[caseId];
         return
         // solhint-disable-next-line not-rely-on-time
