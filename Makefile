@@ -31,12 +31,13 @@ deploy-basic-ruler:
 verify-with-consumer:
 	forge verify-contract \
 		--watch \
-	--constructor-args "$(cast abi-encode 'constructor(address,bytes32,address)' '0x40193c8518BB267228Fc409a613bDbD8eC5a97b3' ca98366cc7314957b8c012c72f05aeeb '0x326C977E6efc84E512bB9C30f76E30c160eD06FB')" \
+		--constructor-args 00000000000000000000000040193c8518bb267228fc409a613bdbd8ec5a97b3000000000000000000000000326c977e6efc84e512bb9c30f76e30c160ed06fb \
 		--etherscan-api-key ${MUMBAI_SCAN_KEY} \
 		--compiler-version v0.8.13+commit.abaa5c0e \
 		--chain 80001 \
-		0xe8c77fc8d5173e8eae0a90ee6d8d0dfdeb0c537e \
+		0x963b39495a6410504bc8c928f3f6f3951f056d6f \
 		src/ModeratioWithConsumer.sol:ModeratioWithConsumer
+
 
 verify-ruler:
 	forge verify-contract \

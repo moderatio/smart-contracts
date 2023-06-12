@@ -7,11 +7,6 @@
         "type": "address"
       },
       {
-        "internalType": "bytes32",
-        "name": "_jobId",
-        "type": "bytes32"
-      },
-      {
         "internalType": "address",
         "name": "_link",
         "type": "address"
@@ -75,6 +70,17 @@
         "internalType": "uint256",
         "name": "caseId",
         "type": "uint256"
+      }
+    ],
+    "name": "CaseNotReadyToRequest",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "caseId",
+        "type": "uint256"
       },
       {
         "internalType": "address",
@@ -113,12 +119,6 @@
         "indexed": true,
         "internalType": "uint256",
         "name": "caseId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "result",
         "type": "uint256"
       }
     ],
@@ -176,11 +176,30 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "volume",
+        "name": "result",
         "type": "uint256"
       }
     ],
     "name": "DataFullfilled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "requestId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "caseId",
+        "type": "uint256"
+      }
+    ],
+    "name": "DataRequested",
     "type": "event"
   },
   {
@@ -394,8 +413,21 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "caseId",
+        "type": "uint256"
+      }
+    ],
+    "name": "executeRuling",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
-        "name": "requestId",
+        "name": "_requestId",
         "type": "bytes32"
       },
       {
@@ -454,7 +486,7 @@
         "type": "uint256"
       }
     ],
-    "name": "isCaseReadyToExecute",
+    "name": "isCaseReadyToRequest",
     "outputs": [
       {
         "internalType": "bool",
