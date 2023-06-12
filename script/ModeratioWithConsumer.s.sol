@@ -27,7 +27,6 @@ contract DeployModeratioWithConsumer is Script {
 
         ModeratioWithConsumer moderatio = new ModeratioWithConsumer(
         0x40193c8518BB267228Fc409a613bDbD8eC5a97b3,
-         "ca98366cc7314957b8c012c72f05aeeb",
         0x326C977E6efc84E512bB9C30f76E30c160eD06FB
         );
 

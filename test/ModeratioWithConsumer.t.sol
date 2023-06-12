@@ -26,7 +26,7 @@ contract ModeratioWithConsumerTest is Test {
     function setUp() public {
         linkToken = new LinkToken();
         mockOracle = new MockOracle(address(linkToken));
-        moderatio = new ModeratioWithConsumer(address(mockOracle), jobId, address(linkToken));
+        moderatio = new ModeratioWithConsumer(address(mockOracle),  address(linkToken));
         ruler = new MockRuler();
         uint256 amount = 1 * 10 ** 18;
         linkToken.transfer(address(moderatio), amount);
